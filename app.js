@@ -21,7 +21,7 @@ app.use(cors({
   credentials: true
 }));
 
-app.post("/analyze-seo", async (req, res) => {
+app.post("/api/analyze-seo", async (req, res) => {
   try {
     const { url } = req.body;
     console.log(`Analyzing URL: ${url}`);
