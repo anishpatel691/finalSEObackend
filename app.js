@@ -13,7 +13,7 @@ import { generateRandomHashtags } from "./geminiService.js";
 const app = express();
 app.use(express.json());  // Middleware to parse JSON data
 const server = createServer(app);
-
+app.use(cors()); // ✅ Fix CORS issues
 app.use(cors({
   origin: "https://final-seo-ghgo.vercel.app", // Allow only your frontend
   methods: "GET,POST,OPTIONS",
@@ -103,39 +103,6 @@ console.log("Optimized Data:", optimizedTitles,"DEs",optimizedDescription,"Tags"
   }
 });
 
-
-app.post("/api/users/register", (req, res) => {
-  console.log("Hello There");
- const {username,password} =req.body();
-console.log(username);
-});
-// WebSocket setup
-io.on("connection", (socket) => {
-  console.log("User connected", socket.id);
-  socket.emit("wellcome", `Welcome to the server`);
-  socket.broadcast.emit("wellcome", `${socket.id} joined the Socket server`);
-  socket.on("message", async (data) => {
-    console.log(data); // Logs the message data received
-    console.log("Socket ID:", socket.id);
-    const id = socket.id; // Logs the socket ID
-
-    // Save the message to MongoDB
-    try {
-      const messageDocument = { message: data, socketId: id, timestamp: new Date() };
-      await messagesCollection.insertOne(messageDocument);
-      console.log("Message saved to MongoDB", messageDocument);
-    } catch (error) {
-      console.error("Failed to save message to MongoDB", error);
-    }
-
-    io.emit("recivemsg", { data, id }); // Broadcast the message to all clients with socket ID
-  });
-
-  // Optional: Handle disconnection
-  socket.on("disconnect", () => {
-    console.log("User disconnected", socket.id);
-  });
-});
  const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, () => {
