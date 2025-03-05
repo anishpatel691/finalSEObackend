@@ -15,10 +15,9 @@ app.use(express.json());  // Middleware to parse JSON data
 const server = createServer(app);
 app.use(cors()); // ✅ Fix CORS issues
 app.use(cors({
-  origin: "https://final-seo-ghgo.vercel.app", // Allow only your frontend
-  methods: "GET,POST,OPTIONS",
-  allowedHeaders: "Content-Type, Authorization",
-  credentials: true
+  origin: "https://final-seo-ghgo.vercel.app", // Allow your frontend URL
+  methods: ["GET", "POST"],
+  allowedHeaders: ["Content-Type"],
 }));
 
 app.post("/api/analyze-seo", async (req, res) => {
