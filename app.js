@@ -20,6 +20,9 @@ app.use(cors({
   allowedHeaders: ["Content-Type"],
 }));
 
+app.use(cors({ origin: "https://final-seo-ghgo.vercel.app" }));
+
+
 app.post("/api/analyze-seo", async (req, res) => {
   try {
     const { url } = req.body;
