@@ -13,15 +13,15 @@ import { generateRandomHashtags } from "./geminiService.js";
 const app = express();
 app.use(express.json());  // Middleware to parse JSON data
 const server = createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: "http://localhost:5173", // Adjusted to match the correct origin
-    methods: ["GET", "POST"],
-    credentials: true,
-  },
-});
 
-app.post("/api/analyze-seo", async (req, res) => {
+app.use(cors({
+  origin: "https://final-seo-ghgo.vercel.app", // Allow only your frontend
+  methods: "GET,POST,OPTIONS",
+  allowedHeaders: "Content-Type, Authorization",
+  credentials: true
+}));
+
+app.post("/analyze-seo", async (req, res) => {
   try {
     const { url } = req.body;
     console.log(`Analyzing URL: ${url}`);
