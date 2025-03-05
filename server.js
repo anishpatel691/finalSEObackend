@@ -6,6 +6,13 @@ import { createServer } from "http";
 import { MongoClient } from "mongodb";
 
 // Load environment variables from .env file
+// ✅ Allow frontend domain in CORS
+app.use(cors({
+  origin: "https://final-seo-ghgo.vercel.app", // Allow only your frontend
+  methods: "GET,POST,OPTIONS",
+  allowedHeaders: "Content-Type, Authorization",
+  credentials: true
+}));
 
 const app = express();
 app.use(express.json());  // Middleware to parse JSON data
