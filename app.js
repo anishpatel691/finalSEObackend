@@ -208,7 +208,7 @@ app.post("/api/users/register", (req, res) => {
   res.json({ message: "User registered (mock response)", username });
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3098;
 
 app.listen(PORT, () => {
   console.log(`🚀 Server is running on http://localhost:${PORT}`);
