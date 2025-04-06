@@ -10,7 +10,8 @@ import { optimizeSEO } from "./geminiService.js";
 import { log } from "console";
 import { generateRandomHashtags } from "./geminiService.js";
 import dotenv from "dotenv";
-
+import Video from "./model/Video.js"; // MongoDB model
+import Admin from "./model/Admin.js";
 
 dotenv.config({
     path: './.env'
