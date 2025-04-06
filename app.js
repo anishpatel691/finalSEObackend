@@ -9,6 +9,12 @@ import { extractVideoId ,fetchVideoDetails } from "./youtubeService.js";
 import { optimizeSEO } from "./geminiService.js";
 import { log } from "console";
 import { generateRandomHashtags } from "./geminiService.js";
+import dotenv from "dotenv";
+
+
+dotenv.config({
+    path: './.env'
+})
 
 const app = express();
 app.use(express.json());  // Middleware to parse JSON data
@@ -21,6 +27,104 @@ app.use(cors({
 }));
 
 app.use(cors({ origin: "https://final-seo-ghgo.vercel.app" }));
+
+
+
+// MongoDB Connection (✅ Replace with your actual MongoDB URI)
+const MONGO_URI = process.env.MONGOODB_URI;
+
+mongoose
+  .connect(MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log("✅ MongoDB Connected"))
+  .catch((err) => console.error("❌ MongoDB Connection Error:", err));
+
+// Routes
+
+
+app.post("/api/admin/login", async (req, res) => {
+  const { username, password } = req.body;
+
+  try {
+    const admin = await Admin.findOne({ username });
+    if (!admin) {
+      return res.json({ success: false, message: "Invalid username" });
+    }
+
+    const isMatch = await admin.matchPassword(password);
+    if (!isMatch) {
+      return res.json({ success: false, message: "Incorrect password" });
+    }
+
+    const lastLoginTime = admin.lastLogin; // Store previous login time
+
+    // ✅ Update login time
+    admin.lastLogin = new Date();
+    await admin.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Login successful",
+      username: admin.username,
+      lastLogin: lastLoginTime || null,
+    });
+
+  } catch (err) {
+    console.error("Login error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// Get all submited VideosUrl
+app.get('/api/admin/videos', async (req, res) => {
+  const videos = await Video.find({});
+  res.json(videos);
+});
+
+app.patch('/api/admin/videos/:id/share', async (req, res) => {
+  const { platform } = req.body;
+  const video = await Video.findById(req.params.id);
+  if (!video) return res.status(404).json({ message: "Video not found" });
+
+  video.shared[platform] = !video.shared[platform];
+  await video.save();
+  res.json(video);
+});
+
+
+// Save video URL
+app.post("/api/save-video", async (req, res) => {
+  const { url } = req.body;
+  console.log(`Analyzing URL: ${url}`);
+
+  
+  try {
+    if (!url) return res.status(400).json({ error: "URL is required" });
+
+    // Check if already exists
+    const exists = await Video.findOne({ url });
+    if (exists) return res.status(200).json({ message: "Already saved." });
+
+    // Save new entry
+    const newVideo = new Video({
+      url,
+      shared: {
+        facebook: false,
+        instagram: false,
+        whatsapp: false,
+        twitter: false
+      }
+    });
+
+    await newVideo.save();
+    res.status(201).json({ message: "Video URL saved!" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server Error" });
+  }
+});
 
 
 app.post("/api/analyze-seo", async (req, res) => {
