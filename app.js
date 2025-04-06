@@ -5,7 +5,6 @@ import bodyParser from "body-parser";
 import seoRoutes from "./seoRoutes.js";
 import { extractVideoId, fetchVideoDetails } from "./youtubeService.js";
 import { optimizeSEO, generateRandomHashtags } from "./geminiService.js";
-import { generateVideoIdeas } from "./newidea.js";
 import videoRoutes from "./routes/videoRoutes.js";
 import Video from "./model/Video.js"; // MongoDB model
 import Admin from "./model/Admin.js";
@@ -179,29 +178,6 @@ app.post("/api/analyze-seo", async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
-
-app.post("/api/generate-ideas", async (req, res) => {
-  try {
-    const { url } = req.body;
-    if (!url) return res.status(400).json({ error: "URL is required" });
-
-    const videoId = extractVideoId(url);
-    if (!videoId) return res.status(400).json({ error: "Invalid YouTube URL" });
-
-    const isShorts = url.includes("/shorts/");
-    const details = await fetchVideoDetails(videoId);
-
-    const { title, language, categoryId } = details;
-    if (!title) return res.status(400).json({ error: "Could not extract title" });
-
-    const ideas = await generateVideoIdeas(title, language, categoryId, isShorts);
-    res.json({ ideas });
-  } catch (err) {
-    console.error("❌ Error in /api/generate-ideas:", err.message);
-    res.status(500).json({ error: "Failed to generate video ideas" });
-  }
-});
-
 app.post("/api/users/register", (req, res) => {
   const { username, password } = req.body;
   console.log("✅ New Registration:", username);
