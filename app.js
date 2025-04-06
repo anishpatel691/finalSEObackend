@@ -1,35 +1,26 @@
 import express from "express";
-import { Server } from "socket.io";
 import cors from "cors";
-import { createServer } from "http";
-import { MongoClient } from "mongodb";
-import bodyParser from 'body-parser';
+import mongoose from "mongoose";
+import bodyParser from "body-parser";
 import seoRoutes from "./seoRoutes.js";
-import { extractVideoId ,fetchVideoDetails } from "./youtubeService.js";
-import { optimizeSEO } from "./geminiService.js";
-import { log } from "console";
-import { generateRandomHashtags } from "./geminiService.js";
-import dotenv from "dotenv";
+import { extractVideoId, fetchVideoDetails } from "./youtubeService.js";
+import { optimizeSEO, generateRandomHashtags } from "./geminiService.js";
+import { generateVideoIdeas } from "./newidea.js";
+import videoRoutes from "./routes/videoRoutes.js";
 import Video from "./model/Video.js"; // MongoDB model
 import Admin from "./model/Admin.js";
+import dotenv from "dotenv";
+
+const app = express();
 
 dotenv.config({
     path: './.env'
 })
 
-const app = express();
-app.use(express.json());  // Middleware to parse JSON data
-const server = createServer(app);
-app.use(cors()); // ✅ Fix CORS issues
-app.use(cors({
-  origin: "https://final-seo-ghgo.vercel.app", // Allow your frontend URL
-  methods: ["GET", "POST"],
-  allowedHeaders: ["Content-Type"],
-}));
-
-app.use(cors({ origin: "https://final-seo-ghgo.vercel.app" }));
-
-
+// Middleware
+app.use(express.json());
+app.use(cors({ origin: "http://localhost:5173", credentials: true }));
+app.use(bodyParser.urlencoded({ extended: true }));
 
 // MongoDB Connection (✅ Replace with your actual MongoDB URI)
 const MONGO_URI = process.env.MONGOODB_URI;
@@ -128,93 +119,97 @@ app.post("/api/save-video", async (req, res) => {
 });
 
 
+
+
 app.post("/api/analyze-seo", async (req, res) => {
   try {
     const { url } = req.body;
     console.log(`Analyzing URL: ${url}`);
 
-    // 1️⃣ Extract Video ID from URL
     const videoId = extractVideoId(url);
-    if (!videoId) {
-      return res.status(400).json({ error: "Invalid YouTube URL" });
-    }
+    if (!videoId) return res.status(400).json({ error: "Invalid YouTube URL" });
+
     const isShorts = url.includes("/shorts/");
-    // 2️⃣ Fetch Video Details from YouTube API
     const details = await fetchVideoDetails(videoId);
-    // console.log("Video Details:", details);
-    // 3️⃣ Generate Trending Tags (if no tags exist)
-    let tags = details.tags;
 
-    // ✅ Ensure `tags` is an array
-    if (!Array.isArray(tags)) {
-      tags = [];
-    }
+    let tags = Array.isArray(details.tags) ? details.tags : [];
 
-    // 3️⃣ Generate Trending Tags (if no tags exist)
     if (tags.length === 0) {
       try {
-        const generatedTags = await generateTags(videoId);
+        const generatedTags = await generateTags(videoId); // Make sure to import or define this
         tags = Array.isArray(generatedTags) ? generatedTags : [];
       } catch (err) {
-        console.warn("⚠️ Error fetching trending tags, using fallback:", err.message);
+        console.warn("⚠️ Error fetching trending tags:", err.message);
         tags = [];
       }
     }
 
-    // 4️⃣ Optimize SEO using Gemini AI (Request multiple titles & hashtags)
-    const optimized = await optimizeSEO(details.title, details.description, tags,details.language,details.categoryId,isShorts);
-console.log("app.js",optimized[1]);
+    const optimized = await optimizeSEO(
+      details.title,
+      details.description,
+      tags,
+      details.language,
+      details.categoryId,
+      isShorts
+    );
 
-    // 🔹 Extract only the top 3 optimized titles
-    const optimizedTitles = Array.isArray(optimized) && optimized.length >= 3 
-      ? optimized.slice(0, 3)  // ✅ Only top 3 optimized titles
-      : [details.title];  // ✅ Fallback to original title if missing
-      // console.log("Optimized Data:", optimized.length ,optimized );
+    const optimizedTitles =
+      Array.isArray(optimized) && optimized.length >= 3
+        ? optimized.slice(0, 3)
+        : [details.title];
 
-    // console.log("Top 3 Optimized Titles:", optimizedTitles);
-   
     const optimizedDescription = optimized[1] || details.description;
-const optimizedTags = optimized[2] && Array.isArray(optimized[2])
-  ? optimized[2] 
-  : tags; // ✅ Ensures `optimizedTags` is an array, falls back to original tags if missing
-// console.log("Optimized RT Tags:", optimizedTags);
-console.log("app.js",optimizedTags);
+    const optimizedTags = Array.isArray(optimized[2]) ? optimized[2] : tags;
+    const optimizedHasTags = Array.isArray(optimized[3]) ? optimized[3] : [];
+    const optimizedRendomHashtags = generateRandomHashtags(details.categoryId);
 
-const optimizedRendomHashtags =  generateRandomHashtags(details.categoryId);
-console.log("app.js",optimizedRendomHashtags);
-
-const optimizedHasTags = optimized[3] && Array.isArray(optimized[3])
-  ? optimized[3] 
-  : []; 
-
-// console.log("Generated Hashtags:", optimizedHashtags);
-
-console.log("Optimized Data:", optimizedTitles,"DEs",optimizedDescription,"Tags",optimizedTags,optimizedHasTags);
-
-    // 6️⃣ Send JSON Response
     res.json({
       title: details.title,
       description: details.description,
-      tags,  // Original tags
-      optimizedTitles, // ✅ Array of 3 optimized titles
-      optimizedDescription, // ✅ Optimized description
+      tags,
+      optimizedTitles,
+      optimizedDescription,
       optimizedTags,
-      optimizedHasTags, // ✅ Optimized tags array
-   // ✅ Optimized hashtags
-      seoScore: Math.floor(Math.random() * 20) + 80, // Random SEO Score (80-100)
+      optimizedHasTags,
+      randomHashtags: optimizedRendomHashtags,
+      seoScore: Math.floor(Math.random() * 20) + 80,
     });
-
   } catch (error) {
     console.error("❌ Error in /api/analyze-seo:", error.message);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
- const PORT = process.env.PORT || 3000;
+app.post("/api/generate-ideas", async (req, res) => {
+  try {
+    const { url } = req.body;
+    if (!url) return res.status(400).json({ error: "URL is required" });
 
-server.listen(PORT, () => {
-  console.log("Server is running on port 3000");
-  console.log("http://localhost:3000");
-  console.log("http://localhost:3000/api/users/register");
-  
-}); 
+    const videoId = extractVideoId(url);
+    if (!videoId) return res.status(400).json({ error: "Invalid YouTube URL" });
+
+    const isShorts = url.includes("/shorts/");
+    const details = await fetchVideoDetails(videoId);
+
+    const { title, language, categoryId } = details;
+    if (!title) return res.status(400).json({ error: "Could not extract title" });
+
+    const ideas = await generateVideoIdeas(title, language, categoryId, isShorts);
+    res.json({ ideas });
+  } catch (err) {
+    console.error("❌ Error in /api/generate-ideas:", err.message);
+    res.status(500).json({ error: "Failed to generate video ideas" });
+  }
+});
+
+app.post("/api/users/register", (req, res) => {
+  const { username, password } = req.body;
+  console.log("✅ New Registration:", username);
+  res.json({ message: "User registered (mock response)", username });
+});
+
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log(`🚀 Server is running on http://localhost:${PORT}`);
+});
