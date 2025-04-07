@@ -5,7 +5,6 @@ import bodyParser from "body-parser";
 import seoRoutes from "./seoRoutes.js";
 import { extractVideoId, fetchVideoDetails } from "./youtubeService.js";
 import { optimizeSEO, generateRandomHashtags } from "./geminiService.js";
-import videoRoutes from "./routes/videoRoutes.js";
 import Video from "./model/Video.js"; // MongoDB model
 import Admin from "./model/Admin.js";
 import dotenv from "dotenv";
