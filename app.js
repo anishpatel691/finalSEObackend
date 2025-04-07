@@ -17,6 +17,7 @@ dotenv.config({
 
 // Middleware
 app.use(express.json());
+// ✅ Use only this
 app.use(cors({
   origin: "https://final-seo-ghgo.vercel.app",
   methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
