@@ -25,7 +25,7 @@ app.use(cors({
 
 app.use(cors({ origin: "https://final-seo-ghgo.vercel.app" }));
 
-app.use(cors({ origin: "http://localhost:5173", credentials: true }));
+
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // MongoDB Connection (✅ Replace with your actual MongoDB URI)
