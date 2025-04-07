@@ -18,10 +18,11 @@ dotenv.config({
 // Middleware
 app.use(express.json());
 app.use(cors({
-  origin: "https://final-seo-ghgo.vercel.app", // Allow your frontend URL
-  methods: ["GET", "POST"],
+  origin: "https://final-seo-ghgo.vercel.app",
+  methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type"],
 }));
+
 
 app.use(cors({ origin: "https://final-seo-ghgo.vercel.app" }));
 
